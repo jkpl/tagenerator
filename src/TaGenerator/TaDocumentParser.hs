@@ -1,4 +1,4 @@
-module TaParser where
+module TaDocumentParser where
 
 import Control.Applicative
 import Data.Char
