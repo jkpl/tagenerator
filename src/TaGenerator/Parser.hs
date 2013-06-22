@@ -45,6 +45,9 @@ bindToRunner f runner items = do
 
 failParser = Parser $ \_ -> Nothing
 
+identityParser (x:xs) = Just (x, xs)
+identityParser [] = Nothing
+
 makeParser :: (a -> Bool) -> [a] -> PResult a a
 makeParser _ [] = Nothing
 makeParser predicate (x:xs) | predicate x = Just (x, xs)

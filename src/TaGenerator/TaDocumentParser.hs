@@ -1,136 +1,132 @@
-module TaDocumentParser where
+module TaDocumentParser
+  ( parseDocument
+  , Ast(TypedBlock, Block, List, StringLiteral, Variable)
+  ) where
 
 import Control.Applicative
 import Data.Char
 import Parser
-import TaData
 import qualified Data.Map as M
 
 
-type ValueMap = M.Map String Value
-type Assignment = (String, Value)
+type ValueMap = M.Map String Ast
+type Assignment = (String, Ast)
 
-data Value = TypedBlock String ValueMap
+data Ast = TypedBlock String ValueMap
            | Block ValueMap
-           | List [Value]
+           | List [Ast]
            | StringLiteral String
            | Variable String
            deriving Show
 
-data Token = Ch Char
-           | Assign
-           | BlockOpen
-           | BlockClose
-           | StringOpen
-           | StringClose
-           | ListOpen
-           | ListClose
-           | StatementEnd
-           | ListSeparator
-           deriving (Eq, Show)
+-- Publics
 
--- Lexers
-
-lexer :: String -> [Token]
-lexer ('=':xs) = Assign : lexer xs
-lexer ('{':xs) = BlockOpen : lexer xs
-lexer ('}':xs) = BlockClose : lexer xs
-lexer ('"':xs) = StringOpen : stringLexer xs
-lexer ('[':xs) = ListOpen : lexer xs
-lexer (']':xs) = ListClose : lexer xs
-lexer (';':xs) = StatementEnd : lexer xs
-lexer (',':xs) = ListSeparator : lexer xs
-lexer (x:xs) | isSpace x = lexer xs
-               | otherwise = (Ch x) : lexer xs
-lexer [] = []
-
-stringLexer :: String -> [Token]
-stringLexer ('\\':x:xs) = (Ch x) : stringLexer xs
-stringLexer ('"':xs) = StringClose : lexer xs
-stringLexer (x:xs) = Ch x : stringLexer xs
-stringLexer [] = []
+parseDocument :: String -> Maybe ValueMap
+parseDocument = fmap fst . run valueMap
 
 
--- Token predicates
+-- Predicates
 
-isAnyChar :: Token -> Bool
-isAnyChar (Ch _) = True
-isAnyChar _ = False
+specialChars = "{}[]=\";"
+
+isSpecialChar :: Char -> Bool
+isSpecialChar c = c `elem` specialChars
+
+isWordChar :: Char -> Bool
+isWordChar c = not $ isSpecialChar c || isSpace c
+
+
+-- Basic character parsers
+
+character :: Char -> Parser Char Char
+character c = Parser $ makeParser (c ==)
+
+string :: String -> Parser Char String
+string = mapM character
+
+anyWord :: Parser Char String
+anyWord = some . Parser $ makeParser isWordChar
+
+space :: Parser Char Char
+space = Parser $ makeParser isSpace
+
+spaces :: Parser Char String
+spaces = many space
+
+spaced :: Parser Char a -> Parser Char a
+spaced p = spaces *> p <* spaces
+
+spacedChar :: Char -> Parser Char Char
+spacedChar c = spaced $ character c
+
+noneOf :: String -> Parser Char Char
+noneOf s = Parser $ makeParser (`notElem` s)
+
+escapeChar :: Parser Char Char
+escapeChar = Parser $ makeParser ('\\' ==)
+
+anyChar :: Parser Char Char
+anyChar = Parser identityParser
+
+escapedChar :: Parser Char Char
+escapedChar = (escapeChar >> anyChar) <|> noneOf "\""
+
+escapedString :: Parser Char String
+escapedString = many escapedChar
 
 
 -- Document parsers
 
-token :: Token -> Parser Token Token
-token t = Parser $ makeParser (t ==)
+stringLiteral :: Parser Char Ast
+stringLiteral = stringLiteral' >>= \s -> return (StringLiteral s)
 
-character :: Char -> Parser Token Char
-character c = Parser $ makeParserAlt (Ch c ==) c
+stringLiteral' :: Parser Char String
+stringLiteral' = character '"' *> escapedString <* character '"'
 
-anyChar :: Parser Token Char
-anyChar = Parser $ \x -> makeParser isAnyChar x >>= getAnyChar
-
-anyString :: Parser Token String
-anyString = some anyChar
-
-string :: String -> Parser Token String
-string = mapM character
-
-assignment :: Parser Token Assignment
+assignment :: Parser Char Assignment
 assignment = do
-  identifier <- anyString
-  token Assign
+  identifier <- anyWord
+  spacedChar '='
   value <- anyValue
-  token StatementEnd
+  spacedChar ';'
   return (identifier, value)
 
-valueMap :: Parser Token ValueMap
+valueMap :: Parser Char ValueMap
 valueMap = some assignment >>= \as -> return (toValueMap as)
 
-blockOfAssignments :: Parser Token ValueMap
-blockOfAssignments = do
-  token BlockOpen
-  as <- valueMap
-  token BlockClose
-  return as
+blockOfAssignments :: Parser Char ValueMap
+blockOfAssignments = spacedChar '{' *> valueMap <* spacedChar '}'
 
-anyValue :: Parser Token Value
-anyValue = stringLiteral <|> typedBlock <|> block <|> list <|> variable
+anyValue :: Parser Char Ast
+anyValue = stringLiteral
+           <|> typedBlock
+           <|> block
+           <|> list
+           <|> variable
 
-anyValues :: Parser Token [Value]
-anyValues = some $ anyValue >>= \v -> token ListSeparator >> return v
+anyValues :: Parser Char [Ast]
+anyValues = many $ anyValue <* spaces
 
-stringLiteral :: Parser Token Value
-stringLiteral = do
-  token StringOpen
-  s <- anyString
-  token StringClose
-  return $ StringLiteral s
-
-typedBlock :: Parser Token Value
+typedBlock :: Parser Char Ast
 typedBlock = do
-  s <- anyString
+  s <- spaced anyWord
   as <- blockOfAssignments
   return $ TypedBlock s as
 
-block :: Parser Token Value
+block :: Parser Char Ast
 block = blockOfAssignments >>= \as -> return (Block as)
 
-list :: Parser Token Value
-list = do
-  token ListOpen
-  vals <- anyValues
-  token ListClose
-  return $ List vals
+list :: Parser Char Ast
+list = list' >>= \vals -> return (List vals)
 
-variable :: Parser Token Value
-variable = anyString >>= \s -> return (Variable s)
+list' :: Parser Char [Ast]
+list' = spacedChar '[' *> anyValues <* spacedChar ']'
+
+variable :: Parser Char Ast
+variable = anyWord >>= \s -> return (Variable s)
 
 
 -- Helpers
-
-getAnyChar :: (Token, [Token]) -> Maybe (Char, [Token])
-getAnyChar ((Ch c), ts) = Just (c, ts)
-getAnyChar _ = Nothing
 
 toValueMap :: [Assignment] -> ValueMap
 toValueMap = M.fromList
