@@ -1,5 +1,7 @@
 module TaDocumentParser
   ( parseDocument
+  , ValueMap
+  , Assignment
   , Ast(TypedBlock, Block, List, StringLiteral, Variable)
   ) where
 
@@ -19,6 +21,7 @@ data Ast = TypedBlock String ValueMap
            | Variable String
            deriving Show
 
+
 -- Publics
 
 parseDocument :: String -> Maybe ValueMap
@@ -27,6 +30,7 @@ parseDocument = fmap fst . run valueMap
 
 -- Predicates
 
+specialChars :: String
 specialChars = "{}[]=\";"
 
 isSpecialChar :: Char -> Bool
@@ -78,10 +82,8 @@ escapedString = many escapedChar
 -- Document parsers
 
 stringLiteral :: Parser Char Ast
-stringLiteral = stringLiteral' >>= \s -> return (StringLiteral s)
-
-stringLiteral' :: Parser Char String
-stringLiteral' = character '"' *> escapedString <* character '"'
+stringLiteral = StringLiteral <$> sl
+  where sl = character '"' *> escapedString <* character '"'
 
 assignment :: Parser Char Assignment
 assignment = do
@@ -92,7 +94,7 @@ assignment = do
   return (identifier, value)
 
 valueMap :: Parser Char ValueMap
-valueMap = some assignment >>= \as -> return (toValueMap as)
+valueMap = toValueMap <$> some assignment
 
 blockOfAssignments :: Parser Char ValueMap
 blockOfAssignments = spacedChar '{' *> valueMap <* spacedChar '}'
@@ -108,22 +110,16 @@ anyValues :: Parser Char [Ast]
 anyValues = many $ anyValue <* spaces
 
 typedBlock :: Parser Char Ast
-typedBlock = do
-  s <- spaced anyWord
-  as <- blockOfAssignments
-  return $ TypedBlock s as
+typedBlock = TypedBlock <$> spaced anyWord <*> blockOfAssignments
 
 block :: Parser Char Ast
-block = blockOfAssignments >>= \as -> return (Block as)
+block = Block <$> blockOfAssignments
 
 list :: Parser Char Ast
-list = list' >>= \vals -> return (List vals)
-
-list' :: Parser Char [Ast]
-list' = spacedChar '[' *> anyValues <* spacedChar ']'
+list = List <$> (spacedChar '[' *> anyValues <* spacedChar ']')
 
 variable :: Parser Char Ast
-variable = anyWord >>= \s -> return (Variable s)
+variable = Variable <$> anyWord
 
 
 -- Helpers
