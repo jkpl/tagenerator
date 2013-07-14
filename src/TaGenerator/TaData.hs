@@ -1,4 +1,30 @@
-module TaData where
+module TaData
+  ( ReferenceMap
+  , RoomMap
+  , ItemMap
+  , Reference(Reference)
+  , DirectionMap(DirectionMap)
+  , TextAdventure(TextAdventure)
+  , Room(Room)
+  , Item(Item)
+  , Action(Action)
+  , ActionType(PickUp, Look)
+  , ref
+  , startRoom
+  , rooms
+  , items
+  , roomName
+  , roomDescription
+  , roomItems
+  , directions
+  , itemDescription
+  , itemActions
+  , actionType
+  , actionSuccess
+  , actionMessage
+  , parseTextAdventure
+  , taFromValueMap
+  ) where
 
 import Control.Applicative
 import DocumentParser
@@ -33,6 +59,14 @@ data Action = Action { actionType :: ActionType
 data ActionType = PickUp | Look deriving Show
 
 
+-- Publics
+
+parseTextAdventure :: String -> Maybe TextAdventure
+parseTextAdventure s = parseDocument s >>= taFromValueMap
+
+
+-- From AST to TextAdventure
+
 instance FromAst Reference where
   fromAst (Variable s) = Just $ Reference s
   fromAst _ = Nothing
@@ -49,6 +83,12 @@ instance FromAst Action where
 instance FromAst Item where
   fromAst = itemFromAst
 
+
+taFromValueMap :: ValueMap -> Maybe TextAdventure
+taFromValueMap vm = TextAdventure
+                    <$> key "start_room" vm
+                    <*> Just (valueMap vm)
+                    <*> Just (valueMap vm)
 
 referenceMapFromAst :: Ast -> Maybe ReferenceMap
 referenceMapFromAst (Block vm) = mapFromValueMap vm
@@ -86,9 +126,3 @@ valueMapToItem vm = Item
                     <$> key "name" vm
                     <*> key "description" vm
                     <*> key "actions" vm
-
-taFromValueMap :: ValueMap -> Maybe TextAdventure
-taFromValueMap vm = TextAdventure
-                    <$> key "start_room" vm
-                    <*> Just (valueMap vm)
-                    <*> Just (valueMap vm)
