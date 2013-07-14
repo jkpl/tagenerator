@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
-module TaCheck (checkTextAdventure) where
+module TaGenerator.TaCheck (checkTextAdventure) where
 
 import qualified Data.Map as M
 import Control.Monad.Writer
-import TaData
+import TaGenerator.TaData
 
 checkTextAdventure :: MonadWriter [String] m => TextAdventure -> m TextAdventure
 checkTextAdventure ta = checkStartRoom ta >> checkRooms ta >> return ta

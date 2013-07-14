@@ -1,4 +1,4 @@
-module TaData
+module TaGenerator.TaData
        ( ReferenceMap
        , RoomMap
        , ItemMap
@@ -8,7 +8,7 @@ module TaData
        , Room(Room)
        , Item(Item)
        , Action(Action)
-       , ActionType(PickUp, Look)
+       , ActionType(..)
        , ref
        , startRoom
        , rooms
@@ -27,8 +27,8 @@ module TaData
        ) where
 
 import Control.Applicative
-import DocumentParser
-import AstParser
+import TaGenerator.DocumentParser
+import TaGenerator.AstParser
 import qualified Data.Map as M
 import qualified Data.Text as T
 

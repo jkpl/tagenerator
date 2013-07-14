@@ -1,6 +1,6 @@
-module AstParser where
+module TaGenerator.AstParser where
 
-import DocumentParser
+import TaGenerator.DocumentParser
 import Control.Applicative
 import qualified Data.Text as T
 import qualified Data.Map as M

@@ -1,13 +1,13 @@
-module DocumentParser
+module TaGenerator.DocumentParser
        ( parseDocument
        , ValueMap
        , Assignment
-       , Ast(TypedBlock, Block, List, StringLiteral, Variable)
+       , Ast(..)
        ) where
 
 import Control.Applicative
 import Data.Char
-import Parser
+import TaGenerator.Parser
 import qualified Data.Map as M
 
 

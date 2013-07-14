@@ -1,6 +1,5 @@
-module Parser where
+module TaGenerator.Parser where
 
-import System.Environment (getArgs)
 import Data.Char
 import qualified Data.Map as M
 import Data.Functor
