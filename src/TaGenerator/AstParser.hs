@@ -7,19 +7,19 @@ import qualified Data.Map as M
 
 
 class FromAst a where
-  fromAst :: Ast -> Maybe a
+    fromAst :: Ast -> Maybe a
 
 
 -- Basic instances
 
 instance FromAst Bool where
-  fromAst = boolConst
+    fromAst = boolConst
 
 instance FromAst T.Text where
-  fromAst = stringLiteral
+    fromAst = stringLiteral
 
 instance FromAst a => FromAst [a] where
-  fromAst = listFromAst
+    fromAst = listFromAst
 
 -- Parsers
 

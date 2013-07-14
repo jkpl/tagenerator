@@ -1,30 +1,30 @@
 module TaData
-  ( ReferenceMap
-  , RoomMap
-  , ItemMap
-  , Reference(Reference)
-  , DirectionMap(DirectionMap)
-  , TextAdventure(TextAdventure)
-  , Room(Room)
-  , Item(Item)
-  , Action(Action)
-  , ActionType(PickUp, Look)
-  , ref
-  , startRoom
-  , rooms
-  , items
-  , roomName
-  , roomDescription
-  , roomItems
-  , directions
-  , itemDescription
-  , itemActions
-  , actionType
-  , actionSuccess
-  , actionMessage
-  , parseTextAdventure
-  , taFromValueMap
-  ) where
+       ( ReferenceMap
+       , RoomMap
+       , ItemMap
+       , Reference(Reference)
+       , DirectionMap(DirectionMap)
+       , TextAdventure(TextAdventure)
+       , Room(Room)
+       , Item(Item)
+       , Action(Action)
+       , ActionType(PickUp, Look)
+       , ref
+       , startRoom
+       , rooms
+       , items
+       , roomName
+       , roomDescription
+       , roomItems
+       , directions
+       , itemDescription
+       , itemActions
+       , actionType
+       , actionSuccess
+       , actionMessage
+       , parseTextAdventure
+       , taFromValueMap
+       ) where
 
 import Control.Applicative
 import DocumentParser
@@ -36,26 +36,31 @@ import qualified Data.Text as T
 type ReferenceMap = M.Map String Reference
 type RoomMap = M.Map String Room
 type ItemMap = M.Map String Item
+
 newtype Reference = Reference { ref :: String } deriving Show
 newtype DirectionMap = DirectionMap ReferenceMap deriving Show
 
-data TextAdventure = TextAdventure { startRoom :: Reference
-                                   , rooms :: RoomMap
-                                   , items :: ItemMap
-                                   } deriving Show
-data Room = Room { roomName :: T.Text
-                 , roomDescription :: T.Text
-                 , roomItems :: [Reference]
-                 , directions :: DirectionMap
-                 } deriving Show
-data Item = Item { itemName :: T.Text
-                 , itemDescription :: T.Text
-                 , itemActions :: [Action]
-                 } deriving Show
-data Action = Action { actionType :: ActionType
-                     , actionSuccess :: Bool
-                     , actionMessage :: T.Text
+data TextAdventure = TextAdventure
+                     { startRoom :: Reference
+                     , rooms :: RoomMap
+                     , items :: ItemMap
                      } deriving Show
+data Room = Room
+            { roomName :: T.Text
+            , roomDescription :: T.Text
+            , roomItems :: [Reference]
+            , directions :: DirectionMap
+            } deriving Show
+data Item = Item
+            { itemName :: T.Text
+            , itemDescription :: T.Text
+            , itemActions :: [Action]
+            } deriving Show
+data Action = Action
+              { actionType :: ActionType
+              , actionSuccess :: Bool
+              , actionMessage :: T.Text
+              } deriving Show
 data ActionType = PickUp | Look deriving Show
 
 
@@ -68,20 +73,20 @@ parseTextAdventure s = parseDocument s >>= taFromValueMap
 -- From AST to TextAdventure
 
 instance FromAst Reference where
-  fromAst (Variable s) = Just $ Reference s
-  fromAst _ = Nothing
+    fromAst (Variable s) = Just $ Reference s
+    fromAst _ = Nothing
 
 instance FromAst Room where
-  fromAst = roomFromAst
+    fromAst = roomFromAst
 
 instance FromAst DirectionMap where
-  fromAst ast = DirectionMap <$> referenceMapFromAst ast
+    fromAst ast = DirectionMap <$> referenceMapFromAst ast
 
 instance FromAst Action where
-  fromAst = actionFromAst
+    fromAst = actionFromAst
 
 instance FromAst Item where
-  fromAst = itemFromAst
+    fromAst = itemFromAst
 
 
 taFromValueMap :: ValueMap -> Maybe TextAdventure

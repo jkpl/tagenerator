@@ -1,9 +1,9 @@
 module DocumentParser
-  ( parseDocument
-  , ValueMap
-  , Assignment
-  , Ast(TypedBlock, Block, List, StringLiteral, Variable)
-  ) where
+       ( parseDocument
+       , ValueMap
+       , Assignment
+       , Ast(TypedBlock, Block, List, StringLiteral, Variable)
+       ) where
 
 import Control.Applicative
 import Data.Char
@@ -15,11 +15,11 @@ type ValueMap = M.Map String Ast
 type Assignment = (String, Ast)
 
 data Ast = TypedBlock String ValueMap
-           | Block ValueMap
-           | List [Ast]
-           | StringLiteral String
-           | Variable String
-           deriving Show
+         | Block ValueMap
+         | List [Ast]
+         | StringLiteral String
+         | Variable String
+         deriving Show
 
 
 -- Publics
@@ -87,11 +87,11 @@ stringLiteral = StringLiteral <$> sl
 
 assignment :: Parser Char Assignment
 assignment = do
-  identifier <- anyWord
-  spacedChar '='
-  value <- anyValue
-  spacedChar ';'
-  return (identifier, value)
+    identifier <- anyWord
+    spacedChar '='
+    value <- anyValue
+    spacedChar ';'
+    return (identifier, value)
 
 valueMap :: Parser Char ValueMap
 valueMap = toValueMap <$> some assignment
