@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module TaGenerator.TaData
        ( ReferenceMap
        , RoomMap
@@ -9,6 +10,8 @@ module TaGenerator.TaData
        , Item(Item)
        , Action(Action)
        , ActionType(..)
+
+         -- Getters
        , ref
        , startRoom
        , rooms
@@ -17,22 +20,35 @@ module TaGenerator.TaData
        , roomDescription
        , roomItems
        , directions
+       , directionMap
+       , itemName
        , itemDescription
        , itemActions
        , actionType
        , actionSuccess
        , actionMessage
+
+         -- Parsing
        , parseTextAdventure
        , taFromValueMap
+
+         -- Utils
        , combineTa
+       , getStartRoom
+       , getRoom
+       , getItem
+       , roomAtDirection
+       , itemFromRoom
+       , actionFromItem
        ) where
 
+import Data.Maybe (listToMaybe)
 import Data.Monoid
 import Control.Applicative
-import TaGenerator.DocumentParser
-import TaGenerator.AstParser
 import qualified Data.Map as M
 import qualified Data.Text as T
+import TaGenerator.DocumentParser
+import TaGenerator.AstParser
 
 
 type ReferenceMap = M.Map String Reference
@@ -40,7 +56,8 @@ type RoomMap = M.Map String Room
 type ItemMap = M.Map String Item
 
 newtype Reference = Reference { ref :: String } deriving Show
-newtype DirectionMap = DirectionMap ReferenceMap deriving Show
+newtype DirectionMap = DirectionMap
+                       { directionMap :: ReferenceMap } deriving Show
 
 data TextAdventure = TextAdventure
                      { startRoom :: Reference
@@ -63,10 +80,24 @@ data Action = Action
               , actionSuccess :: Bool
               , actionMessage :: T.Text
               } deriving Show
-data ActionType = PickUp | Look deriving Show
+data ActionType = PickUp | Look deriving Eq
 
 
--- Useful instances
+class Identifier a where
+    identifier :: a -> String
+
+instance Identifier [Char] where
+    identifier = show
+
+instance Identifier Reference where
+    identifier = ref
+
+instance Show ActionType where
+    show PickUp = "pick up"
+    show Look = "look"
+
+
+-- Useful instances and functions
 
 instance Monoid TextAdventure where
     mappend = combineTa
@@ -81,6 +112,38 @@ combineTa ta1 ta2 =
   where
     nonEmpty (Reference "") r2 = r2
     nonEmpty r1 _ = r1
+
+getStartRoom :: TextAdventure -> Maybe Room
+getStartRoom ta = identifierLookup (startRoom ta) (rooms ta)
+
+getRoom :: Identifier a => TextAdventure -> a -> Maybe Room
+getRoom ta i = identifierLookup i (rooms ta)
+
+getItem :: Identifier a => TextAdventure -> a -> Maybe Item
+getItem ta i = identifierLookup i (items ta)
+
+identifierLookup :: Identifier k => k -> M.Map String v -> Maybe v
+identifierLookup k m = M.lookup (identifier k) m
+
+roomAtDirection :: TextAdventure -> Room -> String -> Maybe Room
+roomAtDirection ta room dir = getRoomRef >>= getRoom ta
+    where getRoomRef = M.lookup dir . directionMap . directions $ room
+
+itemFromRoom :: TextAdventure -> Room -> String -> Maybe (String, Item)
+itemFromRoom ta room itemName =
+    let ris = map ref $ roomItems room
+    in firstFromMap $ M.filterWithKey (\k _ -> k `elem` ris) (items ta)
+
+filterItemsWithName :: ItemMap -> String -> ItemMap
+filterItemsWithName items name = M.filter matcher items
+  where matcher = (==) name . T.unpack . itemName
+
+firstFromMap :: M.Map k v -> Maybe (k, v)
+firstFromMap = listToMaybe . M.toList
+
+actionFromItem :: Item -> ActionType -> Maybe Action
+actionFromItem item at = listToMaybe . filter matcher . itemActions $ item
+  where matcher = (==) at . actionType
 
 
 -- Parse
