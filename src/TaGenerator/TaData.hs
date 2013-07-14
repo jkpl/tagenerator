@@ -1,8 +1,8 @@
 module TaData where
 
 import Control.Applicative
-import TaDocumentParser
-import TaAstParser
+import DocumentParser
+import AstParser
 import qualified Data.Map as M
 import qualified Data.Text as T
 
@@ -10,7 +10,7 @@ import qualified Data.Text as T
 type ReferenceMap = M.Map String Reference
 type RoomMap = M.Map String Room
 type ItemMap = M.Map String Item
-newtype Reference = Reference String deriving Show
+newtype Reference = Reference { ref :: String } deriving Show
 newtype DirectionMap = DirectionMap ReferenceMap deriving Show
 
 data TextAdventure = TextAdventure { startRoom :: Reference

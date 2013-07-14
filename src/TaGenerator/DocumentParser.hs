@@ -1,4 +1,4 @@
-module TaDocumentParser
+module DocumentParser
   ( parseDocument
   , ValueMap
   , Assignment
