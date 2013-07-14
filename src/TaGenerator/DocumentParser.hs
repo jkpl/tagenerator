@@ -22,7 +22,7 @@ data Ast = TypedBlock String ValueMap
          deriving Show
 
 
--- Publics
+-- From string parser
 
 parseDocument :: String -> Maybe ValueMap
 parseDocument = fmap fst . run valueMap

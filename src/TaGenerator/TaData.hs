@@ -24,8 +24,10 @@ module TaGenerator.TaData
        , actionMessage
        , parseTextAdventure
        , taFromValueMap
+       , combineTa
        ) where
 
+import Data.Monoid
 import Control.Applicative
 import TaGenerator.DocumentParser
 import TaGenerator.AstParser
@@ -64,7 +66,24 @@ data Action = Action
 data ActionType = PickUp | Look deriving Show
 
 
--- Publics
+-- Useful instances
+
+instance Monoid TextAdventure where
+    mappend = combineTa
+    mempty = TextAdventure (Reference "") M.empty M.empty
+
+combineTa :: TextAdventure -> TextAdventure -> TextAdventure
+combineTa ta1 ta2 =
+    let sr = nonEmpty (startRoom ta1) (startRoom ta2)
+        rm = M.union (rooms ta1) (rooms ta2)
+        im = M.union (items ta1) (items ta2)
+    in TextAdventure sr rm im
+  where
+    nonEmpty (Reference "") r2 = r2
+    nonEmpty r1 _ = r1
+
+
+-- Parse
 
 parseTextAdventure :: String -> Maybe TextAdventure
 parseTextAdventure s = parseDocument s >>= taFromValueMap
