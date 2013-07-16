@@ -42,8 +42,8 @@ listFromAst :: FromAst a => Ast -> Maybe [a]
 listFromAst (List l) = mapM fromAst l
 
 mapFromValueMap :: FromAst v => ValueMap -> Maybe (M.Map String v)
-mapFromValueMap vm = M.fromList <$> mapM from (M.toList vm)
-  where from (k,v) = (,) <$> Just k <*> fromAst v
+mapFromValueMap vm = M.fromList <$> mapM pairFromAst (M.toList vm)
+  where pairFromAst (k,v) = (,) <$> Just k <*> fromAst v
 
 valueMap :: FromAst v => ValueMap -> M.Map String v
 valueMap = M.mapMaybe fromAst
