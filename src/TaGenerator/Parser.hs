@@ -44,8 +44,13 @@ bindToRunner f runner items = do
 
 -- Rudimentary parsers
 
+failParser :: Parser a b
 failParser = Parser $ \_ -> Nothing
 
+anyValueParser :: b -> Parser a b
+anyValueParser v = Parser $ \xs -> Just (v,xs)
+
+identityParser :: Runner a a
 identityParser (x:xs) = Just (x, xs)
 identityParser [] = Nothing
 

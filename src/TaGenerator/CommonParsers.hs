@@ -5,6 +5,7 @@ module TaGenerator.CommonParsers
        , spacedChar
        , spaced
        , spaces
+       , anyString
        , anyChar
        , noneOf
        ) where
@@ -31,6 +32,9 @@ spaced p = spaces *> p <* spaces
 
 spaces :: Parser Char String
 spaces = many space
+
+anyString :: Parser Char String
+anyString = many anyChar
 
 anyChar :: Parser Char Char
 anyChar = Parser identityParser

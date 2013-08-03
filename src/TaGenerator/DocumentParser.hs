@@ -38,6 +38,10 @@ isSpecialChar c = c `elem` specialChars
 specialChars :: String
 specialChars = "{}[]=\";"
 
+stringLiteral :: Parser Char Ast
+stringLiteral = StringLiteral <$> sl
+  where sl = character '"' *> escapedString <* character '"'
+
 escapedString :: Parser Char String
 escapedString = many escapedChar
 
@@ -46,10 +50,6 @@ escapedChar = (escapeChar >> anyChar) <|> noneOf "\""
 
 escapeChar :: Parser Char Char
 escapeChar = Parser $ makeParser ('\\' ==)
-
-stringLiteral :: Parser Char Ast
-stringLiteral = StringLiteral <$> sl
-  where sl = character '"' *> escapedString <* character '"'
 
 assignment :: Parser Char Assignment
 assignment = do
