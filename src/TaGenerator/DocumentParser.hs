@@ -6,8 +6,9 @@ module TaGenerator.DocumentParser
        ) where
 
 import Control.Applicative
-import Data.Char
+import Data.Char (isSpace)
 import TaGenerator.Parser
+import TaGenerator.CommonParsers
 import qualified Data.Map as M
 
 
@@ -22,64 +23,29 @@ data Ast = TypedBlock String ValueMap
          deriving Show
 
 
--- From string parser
-
 parseDocument :: String -> Maybe ValueMap
 parseDocument = fmap fst . run valueMap
-
-
--- Predicates
-
-specialChars :: String
-specialChars = "{}[]=\";"
-
-isSpecialChar :: Char -> Bool
-isSpecialChar c = c `elem` specialChars
-
-isWordChar :: Char -> Bool
-isWordChar c = not $ isSpecialChar c || isSpace c
-
-
--- Basic character parsers
-
-character :: Char -> Parser Char Char
-character c = Parser $ makeParser (c ==)
-
-string :: String -> Parser Char String
-string = mapM character
 
 anyWord :: Parser Char String
 anyWord = some . Parser $ makeParser isWordChar
 
-space :: Parser Char Char
-space = Parser $ makeParser isSpace
+isWordChar :: Char -> Bool
+isWordChar c = not $ isSpecialChar c || isSpace c
 
-spaces :: Parser Char String
-spaces = many space
+isSpecialChar :: Char -> Bool
+isSpecialChar c = c `elem` specialChars
 
-spaced :: Parser Char a -> Parser Char a
-spaced p = spaces *> p <* spaces
-
-spacedChar :: Char -> Parser Char Char
-spacedChar c = spaced $ character c
-
-noneOf :: String -> Parser Char Char
-noneOf s = Parser $ makeParser (`notElem` s)
-
-escapeChar :: Parser Char Char
-escapeChar = Parser $ makeParser ('\\' ==)
-
-anyChar :: Parser Char Char
-anyChar = Parser identityParser
-
-escapedChar :: Parser Char Char
-escapedChar = (escapeChar >> anyChar) <|> noneOf "\""
+specialChars :: String
+specialChars = "{}[]=\";"
 
 escapedString :: Parser Char String
 escapedString = many escapedChar
 
+escapedChar :: Parser Char Char
+escapedChar = (escapeChar >> anyChar) <|> noneOf "\""
 
--- Document parsers
+escapeChar :: Parser Char Char
+escapeChar = Parser $ makeParser ('\\' ==)
 
 stringLiteral :: Parser Char Ast
 stringLiteral = StringLiteral <$> sl
@@ -95,6 +61,9 @@ assignment = do
 
 valueMap :: Parser Char ValueMap
 valueMap = toValueMap <$> some assignment
+
+toValueMap :: [Assignment] -> ValueMap
+toValueMap = M.fromList
 
 blockOfAssignments :: Parser Char ValueMap
 blockOfAssignments = spacedChar '{' *> valueMap <* spacedChar '}'
@@ -120,9 +89,3 @@ list = List <$> (spacedChar '[' *> anyValues <* spacedChar ']')
 
 variable :: Parser Char Ast
 variable = Variable <$> anyWord
-
-
--- Helpers
-
-toValueMap :: [Assignment] -> ValueMap
-toValueMap = M.fromList
