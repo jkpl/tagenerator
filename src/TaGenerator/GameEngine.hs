@@ -16,7 +16,9 @@ data GameData = GameData
 
 
 startGameLoop :: TextAdventure -> IO String -> IO ()
-startGameLoop ta lineReader = gameLoop (initializeGameState ta) lineReader
+startGameLoop ta lineReader = do
+    gs <- playTurnIO (initializeGameState ta) C.LookAround
+    gameLoop gs lineReader
 
 initializeGameState :: TextAdventure -> GameState
 initializeGameState ta = gamestate [] startroom ta
@@ -31,8 +33,7 @@ gamestate inventory currentroom ta =
 gameLoop :: GameState -> IO String -> IO ()
 gameLoop gs lineReader = do
     command <- readCommand lineReader
-    let (newGs, message) = playTurn gs command
-    putStrLn message
+    newGs <- playTurnIO gs command
     gameLoop' newGs lineReader
 
 gameLoop' :: GameState -> IO String -> IO ()
@@ -45,6 +46,12 @@ readCommand lineReader = do
     case C.parseCommand line of
         Just command -> return command
         Nothing -> putStrLn "Invalid command." >> readCommand lineReader
+
+playTurnIO :: GameState -> C.Command -> IO GameState
+playTurnIO gs command = do
+    let (newGs, message) = playTurn gs command
+    putStrLn message
+    return newGs
 
 playTurn :: GameState -> C.Command -> (GameState, String)
 playTurn GameOver _ = (GameOver, "Game Over")
