@@ -71,7 +71,6 @@ data Item = Item
             , itemDescription :: T.Text
             , getItemActions :: [Action]
             } deriving Show
-
 data Action = Action
               { actionType :: ActionType
               , actionSuccess :: Bool

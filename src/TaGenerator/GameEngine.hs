@@ -131,7 +131,26 @@ unknownAction :: ActionType -> String -> String
 unknownAction at s = concat ["Don't know how to ", (show at), " ", s, "."]
 
 pickUp :: GameData -> String -> (GameState, String)
-pickUp gd@(GameData inventory room ta) name = (GameState gd, "")
+pickUp gd name = doGameStateTransition gd (pickUp' name)
+
+pickUp' :: String -> GameData -> Either String (GameData, String)
+pickUp' name (GameData inventory room ta) = do
+    (r, item) <- getItemFromRoom ta room name
+    message <- doActionOnItem PickUp item
+    let newItems = item : inventory
+        newRoomItems = removeItemFromRoom r room
+        newTa = removeItemFromTa r ta
+    return (GameData newItems newRoomItems newTa, message)
+
+removeItemFromRoom :: String -> Room -> Room
+removeItemFromRoom item (Room name desc items directions) =
+    let itemsWithoutGivenItem = filter ((==) item . ref) items
+    in Room name desc itemsWithoutGivenItem directions
+
+removeItemFromTa :: String -> TextAdventure -> TextAdventure
+removeItemFromTa item (TextAdventure sr rooms items) =
+    let newRooms = M.map (removeItemFromRoom item) rooms
+    in TextAdventure sr newRooms items
 
 lookAround :: GameData -> (GameState, String)
 lookAround gd = (GameState gd, concat [description, "\n\n", showRoomItems gd])
