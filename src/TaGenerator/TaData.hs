@@ -51,7 +51,7 @@ type ReferenceMap = M.Map String Reference
 type RoomMap = M.Map String Room
 type ItemMap = M.Map String Item
 
-newtype Reference = Reference { ref :: String } deriving Show
+newtype Reference = Reference { ref :: String } deriving (Eq, Show)
 newtype DirectionMap = DirectionMap
                        { directionMap :: ReferenceMap } deriving Show
 
@@ -181,9 +181,13 @@ parseTextAdventure s = parseDocument s >>= taFromValueMap
 
 taFromValueMap :: ValueMap -> Maybe TextAdventure
 taFromValueMap vm = TextAdventure
-                    <$> key "start_room" vm
+                    <$> startroom
                     <*> Just (valueMap vm)
                     <*> Just (valueMap vm)
+  where startroom = key "start_room" vm <|> (Just emptyReference)
+
+emptyReference :: Reference
+emptyReference = Reference ""
 
 getStartRoom :: TextAdventure -> Maybe Room
 getStartRoom ta = identifierLookup (startRoom ta) (taRooms ta)
