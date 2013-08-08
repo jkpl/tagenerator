@@ -1,4 +1,4 @@
-module TaGenerator.GameEngine where
+module TaGenerator.GameEngine (startGameLoop) where
 
 import qualified Data.Text as T
 import qualified Data.Map as M
@@ -15,6 +15,9 @@ data GameData = GameData
                  } deriving Show
 
 
+startGameLoop :: TextAdventure -> IO String -> IO ()
+startGameLoop ta lineReader = gameLoop (initializeGameState ta) lineReader
+
 initializeGameState :: TextAdventure -> GameState
 initializeGameState ta = gamestate [] startroom ta
   where startroom = roomOrFail $ getStartRoom ta
@@ -22,14 +25,33 @@ initializeGameState ta = gamestate [] startroom ta
         roomOrFail Nothing = error "Could not find starting room."
 
 gamestate :: [Item] -> Room -> TextAdventure -> GameState
-gamestate inventory currentroom ta = GameState $ GameData inventory currentroom ta
+gamestate inventory currentroom ta =
+    GameState $ GameData inventory currentroom ta
 
-interact :: GameState -> C.Command -> (GameState, String)
-interact GameOver _ = (GameOver, "Game Over")
-interact (GameState gamedata) command = interact' gamedata command
+gameLoop :: GameState -> IO String -> IO ()
+gameLoop gs lineReader = do
+    command <- readCommand lineReader
+    let (newGs, message) = playTurn gs command
+    putStrLn message
+    gameLoop' newGs lineReader
 
-interact' :: GameData -> C.Command -> (GameState, String)
-interact' gamedata command = case command of
+gameLoop' :: GameState -> IO String -> IO ()
+gameLoop' GameOver _ = return ()
+gameLoop' gs lineReader = gameLoop gs lineReader
+
+readCommand :: IO String -> IO C.Command
+readCommand lineReader = do
+    line <- lineReader
+    case C.parseCommand line of
+        Just command -> return command
+        Nothing -> putStrLn "Invalid command." >> readCommand lineReader
+
+playTurn :: GameState -> C.Command -> (GameState, String)
+playTurn GameOver _ = (GameOver, "Game Over")
+playTurn (GameState gamedata) command = playTurn' gamedata command
+
+playTurn' :: GameData -> C.Command -> (GameState, String)
+playTurn' gamedata command = case command of
     C.Quit -> quit
     C.LookAtInventory -> lookAtInventory gamedata
     C.Go target -> move gamedata target
@@ -41,7 +63,8 @@ quit :: (GameState, String)
 quit = (GameOver, "Game over")
 
 lookAtInventory :: GameData -> (GameState, String)
-lookAtInventory gd@(GameData inventory _ _) = (GameState gd, showInventory inventory)
+lookAtInventory gd@(GameData inventory _ _) =
+    (GameState gd, showInventory inventory)
 
 showInventory :: [Item] -> String
 showInventory [] = "You have nothing in your inventory."
@@ -79,7 +102,7 @@ roomAtDirection' ta room direction = getRoomRef >>= getRoom ta
   where getRoomRef = M.lookup direction . directionMap . getRoomDirections $ room
 
 enterRoom :: Room -> String
-enterRoom room = concat ["Entered ", getName room , ": \n\n", getName room]
+enterRoom room = concat ["Entered ", getName room , ": \n", getDescription room]
 
 cantMove :: String -> String
 cantMove direction = "Can't move to " ++ direction
@@ -131,7 +154,7 @@ couldNotFind name = "Couldn't find " ++ name
 doActionOnItem :: ActionType -> Item -> Either String String
 doActionOnItem actiontype item = do
     target <- listToEither failMessage actionList
-    return (T.unpack $ actionMessage target)
+    boolToEither (actionSuccess target) (T.unpack $ actionMessage target)
   where
     actionList = actionsFromItem item actiontype
     failMessage = unknownAction actiontype (getName item)
@@ -142,6 +165,10 @@ actionsFromItem item at = filter matcher . getItemActions $ item
 
 listToEither :: b -> [a] -> Either b a
 listToEither b = maybeToEither b . listToMaybe
+
+boolToEither :: Bool -> v -> Either v v
+boolToEither True v = Right v
+boolToEither False v = Left v
 
 unknownAction :: ActionType -> String -> String
 unknownAction at s = concat ["Don't know how to ", (show at), " ", s, "."]
@@ -160,7 +187,7 @@ pickUp' name (GameData inventory room ta) = do
 
 removeItemFromRoom :: String -> Room -> Room
 removeItemFromRoom item (Room name desc items directions) =
-    let itemsWithoutGivenItem = filter ((==) item . ref) items
+    let itemsWithoutGivenItem = filter ((/=) item . ref) items
     in Room name desc itemsWithoutGivenItem directions
 
 removeItemFromTa :: String -> TextAdventure -> TextAdventure
