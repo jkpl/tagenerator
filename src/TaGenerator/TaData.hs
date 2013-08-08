@@ -11,22 +11,22 @@ module TaGenerator.TaData
        , Action(Action)
        , ActionType(..)
 
+         -- Type class functions
+       , getName
+       , getDescription
+
          -- Getters
        , ref
        , startRoom
-       , rooms
-       , items
-       , roomName
-       , roomDescription
-       , roomItems
-       , directions
+       , taRooms
+       , taItems
        , directionMap
-       , itemName
-       , itemDescription
-       , itemActions
        , actionType
        , actionSuccess
        , actionMessage
+       , getRoomItems
+       , getRoomDirections
+       , getItemActions
 
          -- Parsing
        , parseTextAdventure
@@ -57,20 +57,21 @@ newtype DirectionMap = DirectionMap
 
 data TextAdventure = TextAdventure
                      { startRoom :: Reference
-                     , rooms :: RoomMap
-                     , items :: ItemMap
+                     , taRooms :: RoomMap
+                     , taItems :: ItemMap
                      } deriving Show
 data Room = Room
             { roomName :: T.Text
             , roomDescription :: T.Text
-            , roomItems :: [Reference]
-            , directions :: DirectionMap
+            , getRoomItems :: [Reference]
+            , getRoomDirections :: DirectionMap
             } deriving Show
 data Item = Item
             { itemName :: T.Text
             , itemDescription :: T.Text
-            , itemActions :: [Action]
+            , getItemActions :: [Action]
             } deriving Show
+
 data Action = Action
               { actionType :: ActionType
               , actionSuccess :: Bool
@@ -79,8 +80,21 @@ data Action = Action
 data ActionType = PickUp | Look deriving Eq
 
 
+class Info a where
+    getName :: a -> String
+    getDescription :: a -> String
+
 class Identifier a where
     identifier :: a -> String
+
+
+instance Info Room where
+    getName = T.unpack . roomName
+    getDescription = T.unpack . roomDescription
+
+instance Info Item where
+    getName = T.unpack . itemName
+    getDescription = T.unpack . itemDescription
 
 
 instance Identifier [Char] where
@@ -102,8 +116,8 @@ instance Monoid TextAdventure where
 combineTa :: TextAdventure -> TextAdventure -> TextAdventure
 combineTa ta1 ta2 =
     let sr = nonEmpty (startRoom ta1) (startRoom ta2)
-        rm = M.union (rooms ta1) (rooms ta2)
-        im = M.union (items ta1) (items ta2)
+        rm = M.union (taRooms ta1) (taRooms ta2)
+        im = M.union (taItems ta1) (taItems ta2)
     in TextAdventure sr rm im
   where
     nonEmpty (Reference "") r2 = r2
@@ -173,13 +187,13 @@ taFromValueMap vm = TextAdventure
                     <*> Just (valueMap vm)
 
 getStartRoom :: TextAdventure -> Maybe Room
-getStartRoom ta = identifierLookup (startRoom ta) (rooms ta)
+getStartRoom ta = identifierLookup (startRoom ta) (taRooms ta)
 
 identifierLookup :: Identifier k => k -> M.Map String v -> Maybe v
 identifierLookup k m = M.lookup (identifier k) m
 
 getRoom :: Identifier a => TextAdventure -> a -> Maybe Room
-getRoom ta i = identifierLookup i (rooms ta)
+getRoom ta i = identifierLookup i (taRooms ta)
 
 getItem :: Identifier a => TextAdventure -> a -> Maybe Item
-getItem ta i = identifierLookup i (items ta)
+getItem ta i = identifierLookup i (taItems ta)

@@ -60,12 +60,10 @@ maybeToEither b Nothing = Left b
 
 roomAtDirection' :: TextAdventure -> Room -> String -> Maybe Room
 roomAtDirection' ta room direction = getRoomRef >>= getRoom ta
-    where getRoomRef = M.lookup direction . directionMap . directions $ room
+  where getRoomRef = M.lookup direction . directionMap . getRoomDirections $ room
 
 enterRoom :: Room -> String
-enterRoom room = concat [ "Entered ", T.unpack (roomName room)
-                        , ": \n\n", T.unpack (roomDescription room)
-                        ]
+enterRoom room = concat ["Entered ", getName room , ": \n\n", getName room]
 
 cantMove :: String -> String
 cantMove direction = "Can't move to " ++ direction
@@ -93,8 +91,8 @@ getItemFromRoom ta room name =
 
 itemFromRoom :: TextAdventure -> Room -> String -> Maybe (String, Item)
 itemFromRoom ta room name =
-    let ris = map ref $ roomItems room
-        itemMap = items ta
+    let ris = map ref $ getRoomItems room
+        itemMap = taItems ta
         itemsInRoom = M.filterWithKey (hasKeyInList ris) itemMap
     in getFirstFromMap . filterItems $ itemsInRoom
   where
@@ -109,7 +107,7 @@ filterItemMapWithName itemMap name = M.filter matcher itemMap
   where matcher item = itemHasName item name
 
 itemHasName :: Item -> String -> Bool
-itemHasName item name = (==) name . T.unpack . itemName $ item
+itemHasName item name = (==) name . getName $ item
 
 couldNotFind :: String -> String
 couldNotFind name = "Couldn't find " ++ name
@@ -120,10 +118,10 @@ doActionOnItem actiontype item = do
     return (T.unpack $ actionMessage target)
   where
     actionList = actionsFromItem item actiontype
-    failMessage = unknownAction actiontype (T.unpack $ itemName item)
+    failMessage = unknownAction actiontype (getName item)
 
 actionsFromItem :: Item -> ActionType -> [Action]
-actionsFromItem item at = filter matcher . itemActions $ item
+actionsFromItem item at = filter matcher . getItemActions $ item
   where matcher = (==) at . actionType
 
 listToEither :: b -> [a] -> Either b a
@@ -137,18 +135,18 @@ pickUp gd@(GameData inventory room ta) name = (GameState gd, "")
 
 lookAround :: GameData -> (GameState, String)
 lookAround gd = (GameState gd, concat [description, "\n\n", showRoomItems gd])
-  where description = T.unpack . roomDescription . currentRoom $ gd
+  where description = getDescription . currentRoom $ gd
 
 showRoomItems :: GameData -> String
 showRoomItems (GameData _ room ta) =
-    let itemsInRoom = getRoomItems ta room
+    let itemsInRoom = roomItems ta room
     in if null itemsInRoom
        then "No items in this room."
        else "Items in this room:\n" ++ showItemsAsList itemsInRoom
 
+roomItems :: TextAdventure -> Room -> [Item]
+roomItems ta room = mapMaybe (getItem ta) (getRoomItems room)
+
 showItemsAsList :: [Item] -> String
 showItemsAsList = concatMap renderItem
-  where renderItem item = concat ["- " , (T.unpack $ itemName item) , "\n"]
-
-getRoomItems :: TextAdventure -> Room -> [Item]
-getRoomItems ta room = mapMaybe (getItem ta) (roomItems room)
+  where renderItem item = concat ["- " , getName item, "\n"]
