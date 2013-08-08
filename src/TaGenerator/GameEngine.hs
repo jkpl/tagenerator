@@ -30,10 +30,26 @@ interact (GameState gamedata) command = interact' gamedata command
 
 interact' :: GameData -> C.Command -> (GameState, String)
 interact' gamedata command = case command of
+    C.Quit -> quit
+    C.LookAtInventory -> lookAtInventory gamedata
     C.Go target -> move gamedata target
     C.LookAt target -> lookAt gamedata target
     C.PickUp target -> pickUp gamedata target
     C.LookAround -> lookAround gamedata
+
+quit :: (GameState, String)
+quit = (GameOver, "Game over")
+
+lookAtInventory :: GameData -> (GameState, String)
+lookAtInventory gd@(GameData inventory _ _) = (GameState gd, showInventory inventory)
+
+showInventory :: [Item] -> String
+showInventory [] = "You have nothing in your inventory."
+showInventory items = concat ["Inventory:\n", showItemsAsList items]
+
+showItemsAsList :: [Item] -> String
+showItemsAsList = concatMap renderItem
+  where renderItem item = concat ["- " , getName item, "\n"]
 
 move :: GameData -> String -> (GameState, String)
 move gd direction = doGameStateTransition gd (move' direction)
@@ -165,7 +181,3 @@ showRoomItems (GameData _ room ta) =
 
 roomItems :: TextAdventure -> Room -> [Item]
 roomItems ta room = mapMaybe (getItem ta) (getRoomItems room)
-
-showItemsAsList :: [Item] -> String
-showItemsAsList = concatMap renderItem
-  where renderItem item = concat ["- " , getName item, "\n"]
