@@ -1,10 +1,13 @@
 {-# LANGUAGE FlexibleContexts #-}
-module TaGenerator.TaCheck (checkTextAdventure) where
+module TaGenerator.TaCheck (checkTextAdventure, runChecker) where
 
 import qualified Data.Map as M
 import Control.Monad.Writer
 import TaGenerator.TaData
 
+
+runChecker :: TextAdventure -> [String]
+runChecker = snd . runWriter . checkTextAdventure
 
 checkTextAdventure :: MonadWriter [String] m
                    => TextAdventure   -- ^ TextAdventure to check
