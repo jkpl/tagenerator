@@ -1,0 +1,9 @@
+smallroom = room {
+    name = "Small room";
+    description = "You enter a small room. There's a ladder leading up here.";
+    directions = {
+        south = crosspoint;
+        up = deadend;
+    };
+    items = [ ];
+};

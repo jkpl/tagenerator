@@ -1,0 +1,8 @@
+deadend = room {
+    name = "Dead end";
+    description = "You climb your way up to a empty room. Looks like a dead end. There's a small note posted to wall of the room: \"Did you check out the storage room. I heard there is stuff down there. You can also quit the game by typing 'quit'.\"";
+    directions = {
+        down = smallroom;
+    };
+    items = [ ];
+};

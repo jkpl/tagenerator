@@ -1,6 +1,6 @@
 storageroom = room {
     name = "Storage room";
-    description = "Storage room seems to hold some items. Try picking them up.";
+    description = "Storage room seems to hold some items. Maybe you should try looking at them or try to pick them up.";
     directions = {
         east = crosspoint;
     };
@@ -32,7 +32,7 @@ box = item {
         }
         look {
             success = yes;
-            message = "You see an ordinary box. Perhaps I could pick it up.";
+            message = "You see an ordinary box. Perhaps you could pick it up.";
         }
     ];
 };
@@ -43,7 +43,7 @@ dog = item {
     actions = [
         pickup {
             success = no;
-            message = "I better not disturb the dog. It might be bite me or something.";
+            message = "You better not disturb the dog. It might bite or something.";
         }
         look {
             success = yes;

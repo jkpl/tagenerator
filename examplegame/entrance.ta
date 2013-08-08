@@ -1,6 +1,6 @@
 entrance = room {
     name = "Entrance";
-    description = "You see a sign that tells you to go north.";
+    description = "You're at the entrance. There's a small sign: \"Hey, welcome to [ENTER DUNGEON NAME HERE]. Don't forget to look around. You probably should go north from here.\"";
     directions = {
         north = crosspoint;
     };
