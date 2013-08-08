@@ -1,39 +1,49 @@
 module Main where
 
-import Data.Monoid
 import Control.Monad.Writer (runWriter)
 import System.IO
-import System.Directory
 import System.Environment (getArgs)
-import System.FilePath
-import TaGenerator.TaData
+import System.FilePath (combine)
+import TaGenerator.TaData (TextAdventure)
 import TaGenerator.TaCheck
+import TaGenerator.FileParser
+import TaGenerator.GameEngine
 
 
 main :: IO ()
 main = do
     args <- getArgs
-    dircontents <- getDirectoryFilePaths $ targetPath args
-    tas <- readAllTaFiles $ textAdventureFiles dircontents
-    print $ fmap (runWriter . checkTextAdventure) tas
-
-getDirectoryFilePaths :: FilePath -> IO [FilePath]
-getDirectoryFilePaths path = do
-    dircontents <- getDirectoryContents path
-    return $ fmap (combine path) dircontents
+    let fpath = targetPath args
+    putStrLn $ "Reading text adventure from path: " ++ fpath
+    perhapsTa <- readTextAdventureFromDirectory fpath
+    case perhapsTa of
+        Just ta -> checkTaAndPlay ta
+        Nothing -> putStrLn "Failed to parse game."
 
 targetPath :: [String] -> FilePath
 targetPath (x:_) = combine "." x
 targetPath [] = "."
 
-textAdventureFiles :: [FilePath] -> [FilePath]
-textAdventureFiles = filter ((==) ".ta" . takeExtension)
+checkTaAndPlay :: TextAdventure -> IO ()
+checkTaAndPlay ta = do
+    let warnings = runChecker ta
+    case null warnings of
+        True -> playGame ta
+        False -> printWarnings warnings
 
-readAllTaFiles :: [FilePath] -> IO (Maybe TextAdventure)
-readAllTaFiles files = fmap mconcat $ mapM readTaFromFile files
+playGame :: TextAdventure -> IO ()
+playGame ta = startGameLoop ta lineReader
 
-readTaFromFile :: FilePath -> IO (Maybe TextAdventure)
-readTaFromFile fname = do
-    handle <- openFile fname ReadMode
-    contents <- hGetContents handle
-    return $ parseTextAdventure contents
+lineReader :: IO String
+lineReader = do
+    putStr ">> "
+    hFlush stdout
+    getLine
+
+printWarnings :: [String] -> IO ()
+printWarnings [] = putStrLn "No warnings found."
+printWarnings xs = mapM_ putStrLn ["Found warnings:", showWarningsAsList xs]
+
+showWarningsAsList :: [String] -> String
+showWarningsAsList = concatMap render
+  where render s = concat ["- ", s, "\n"]
