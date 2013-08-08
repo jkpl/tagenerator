@@ -37,11 +37,6 @@ module TaGenerator.TaData
        , getStartRoom
        , getRoom
        , getItem
-       , roomAtDirection
-       , itemFromRoom
-       , actionsFromItem
-       , itemHasName
-       , filterItemMapWithName
        ) where
 
 import Data.Maybe (listToMaybe)
@@ -88,18 +83,18 @@ data ActionType = PickUp | Look deriving Eq
 class Identifier a where
     identifier :: a -> String
 
+
 instance Identifier [Char] where
     identifier = show
 
 instance Identifier Reference where
     identifier = ref
 
+
 instance Show ActionType where
     show PickUp = "pick up"
     show Look = "look"
 
-
--- Useful instances and functions
 
 instance Monoid TextAdventure where
     mappend = combineTa
@@ -115,49 +110,6 @@ combineTa ta1 ta2 =
     nonEmpty (Reference "") r2 = r2
     nonEmpty r1 _ = r1
 
-getStartRoom :: TextAdventure -> Maybe Room
-getStartRoom ta = identifierLookup (startRoom ta) (rooms ta)
-
-getRoom :: Identifier a => TextAdventure -> a -> Maybe Room
-getRoom ta i = identifierLookup i (rooms ta)
-
-getItem :: Identifier a => TextAdventure -> a -> Maybe Item
-getItem ta i = identifierLookup i (items ta)
-
-identifierLookup :: Identifier k => k -> M.Map String v -> Maybe v
-identifierLookup k m = M.lookup (identifier k) m
-
-roomAtDirection :: TextAdventure -> Room -> String -> Maybe Room
-roomAtDirection ta room dir = getRoomRef >>= getRoom ta
-    where getRoomRef = M.lookup dir . directionMap . directions $ room
-
-itemFromRoom :: TextAdventure -> Room -> String -> Maybe (String, Item)
-itemFromRoom ta room itemName =
-    let ris = map ref $ roomItems room
-    in firstFromMap $ M.filterWithKey (\k _ -> k `elem` ris) (items ta)
-
-filterItemMapWithName :: ItemMap -> String -> ItemMap
-filterItemMapWithName items name = M.filter matcher items
-  where matcher item = itemHasName item name
-
-firstFromMap :: M.Map k v -> Maybe (k, v)
-firstFromMap = listToMaybe . M.toList
-
-actionsFromItem :: Item -> ActionType -> [Action]
-actionsFromItem item at = filter matcher . itemActions $ item
-  where matcher = (==) at . actionType
-
-itemHasName :: Item -> String -> Bool
-itemHasName item name = (==) name . T.unpack . itemName $ item
-
-
--- Parse
-
-parseTextAdventure :: String -> Maybe TextAdventure
-parseTextAdventure s = parseDocument s >>= taFromValueMap
-
-
--- From AST to TextAdventure
 
 instance FromAst Reference where
     fromAst (Variable s) = Just $ Reference s
@@ -165,26 +117,6 @@ instance FromAst Reference where
 
 instance FromAst Room where
     fromAst = roomFromAst
-
-instance FromAst DirectionMap where
-    fromAst ast = DirectionMap <$> referenceMapFromAst ast
-
-instance FromAst Action where
-    fromAst = actionFromAst
-
-instance FromAst Item where
-    fromAst = itemFromAst
-
-
-taFromValueMap :: ValueMap -> Maybe TextAdventure
-taFromValueMap vm = TextAdventure
-                    <$> key "start_room" vm
-                    <*> Just (valueMap vm)
-                    <*> Just (valueMap vm)
-
-referenceMapFromAst :: Ast -> Maybe ReferenceMap
-referenceMapFromAst (Block vm) = mapFromValueMap vm
-referenceMapFromAst _ = Nothing
 
 roomFromAst :: Ast -> Maybe Room
 roomFromAst (TypedBlock "room" vm) = valueMapToRoom vm
@@ -196,6 +128,16 @@ valueMapToRoom vm = Room
                     <*> key "description" vm
                     <*> key "items" vm
                     <*> key "directions" vm
+
+instance FromAst DirectionMap where
+    fromAst ast = DirectionMap <$> referenceMapFromAst ast
+
+referenceMapFromAst :: Ast -> Maybe ReferenceMap
+referenceMapFromAst (Block vm) = mapFromValueMap vm
+referenceMapFromAst _ = Nothing
+
+instance FromAst Action where
+    fromAst = actionFromAst
 
 actionFromAst :: Ast -> Maybe Action
 actionFromAst (TypedBlock t vm) = Action
@@ -209,6 +151,9 @@ strToActionType "pickup" = Just PickUp
 strToActionType "look" = Just Look
 strToActionType _ = Nothing
 
+instance FromAst Item where
+    fromAst = itemFromAst
+
 itemFromAst :: Ast -> Maybe Item
 itemFromAst (TypedBlock "item" vm) = valueMapToItem vm
 itemFromAst _ = Nothing
@@ -218,3 +163,24 @@ valueMapToItem vm = Item
                     <$> key "name" vm
                     <*> key "description" vm
                     <*> key "actions" vm
+
+parseTextAdventure :: String -> Maybe TextAdventure
+parseTextAdventure s = parseDocument s >>= taFromValueMap
+
+taFromValueMap :: ValueMap -> Maybe TextAdventure
+taFromValueMap vm = TextAdventure
+                    <$> key "start_room" vm
+                    <*> Just (valueMap vm)
+                    <*> Just (valueMap vm)
+
+getStartRoom :: TextAdventure -> Maybe Room
+getStartRoom ta = identifierLookup (startRoom ta) (rooms ta)
+
+identifierLookup :: Identifier k => k -> M.Map String v -> Maybe v
+identifierLookup k m = M.lookup (identifier k) m
+
+getRoom :: Identifier a => TextAdventure -> a -> Maybe Room
+getRoom ta i = identifierLookup i (rooms ta)
+
+getItem :: Identifier a => TextAdventure -> a -> Maybe Item
+getItem ta i = identifierLookup i (items ta)

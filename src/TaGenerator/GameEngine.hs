@@ -1,6 +1,7 @@
 module TaGenerator.GameEngine where
 
 import qualified Data.Text as T
+import qualified Data.Map as M
 import Data.Maybe (listToMaybe)
 import TaGenerator.TaData
 import qualified TaGenerator.CommandParser as C
@@ -40,6 +41,10 @@ move gd@(GameData inventory currentRoom ta) direction =
         Just nextRoom -> (gamestate inventory nextRoom ta, enterRoom nextRoom)
         Nothing -> (GameState gd, cantMove direction)
 
+roomAtDirection :: TextAdventure -> Room -> String -> Maybe Room
+roomAtDirection ta room dir = getRoomRef >>= getRoom ta
+    where getRoomRef = M.lookup dir . directionMap . directions $ room
+
 enterRoom :: Room -> String
 enterRoom room = concat [ "Entered ", T.unpack (roomName room)
                         , ": \n\n", T.unpack (roomDescription room)
@@ -69,6 +74,14 @@ getItemFromRoom ta room itemName =
         failMessage = couldNotFind itemName
     in maybeToEither failMessage item
 
+itemFromRoom :: TextAdventure -> Room -> String -> Maybe (String, Item)
+itemFromRoom ta room itemName =
+    let ris = map ref $ roomItems room
+    in firstFromMap $ M.filterWithKey (\k _ -> k `elem` ris) (items ta)
+
+firstFromMap :: M.Map k v -> Maybe (k, v)
+firstFromMap = listToMaybe . M.toList
+
 maybeToEither :: b -> Maybe a -> Either b a
 maybeToEither _ (Just a) = Right a
 maybeToEither b Nothing = Left b
@@ -84,6 +97,10 @@ doActionOnItem actiontype item = do
     actionList = actionsFromItem item actiontype
     failMessage = unknownAction actiontype (T.unpack $ itemName item)
 
+actionsFromItem :: Item -> ActionType -> [Action]
+actionsFromItem item at = filter matcher . itemActions $ item
+  where matcher = (==) at . actionType
+
 listToEither :: b -> [a] -> Either b a
 listToEither b = maybeToEither b . listToMaybe
 
@@ -96,3 +113,10 @@ pickUp gd@(GameData inventory room ta) name = (GameState gd, "")
 lookAround :: GameData -> (GameState, String)
 lookAround gd = (GameState gd, description)
   where description = T.unpack . roomDescription . currentRoom $ gd
+
+filterItemMapWithName :: ItemMap -> String -> ItemMap
+filterItemMapWithName items name = M.filter matcher items
+  where matcher item = itemHasName item name
+
+itemHasName :: Item -> String -> Bool
+itemHasName item name = (==) name . T.unpack . itemName $ item
