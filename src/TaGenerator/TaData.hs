@@ -39,7 +39,9 @@ module TaGenerator.TaData
        , getItem
        , roomAtDirection
        , itemFromRoom
-       , actionFromItem
+       , actionsFromItem
+       , itemHasName
+       , filterItemMapWithName
        ) where
 
 import Data.Maybe (listToMaybe)
@@ -134,16 +136,19 @@ itemFromRoom ta room itemName =
     let ris = map ref $ roomItems room
     in firstFromMap $ M.filterWithKey (\k _ -> k `elem` ris) (items ta)
 
-filterItemsWithName :: ItemMap -> String -> ItemMap
-filterItemsWithName items name = M.filter matcher items
-  where matcher = (==) name . T.unpack . itemName
+filterItemMapWithName :: ItemMap -> String -> ItemMap
+filterItemMapWithName items name = M.filter matcher items
+  where matcher item = itemHasName item name
 
 firstFromMap :: M.Map k v -> Maybe (k, v)
 firstFromMap = listToMaybe . M.toList
 
-actionFromItem :: Item -> ActionType -> Maybe Action
-actionFromItem item at = listToMaybe . filter matcher . itemActions $ item
+actionsFromItem :: Item -> ActionType -> [Action]
+actionsFromItem item at = filter matcher . itemActions $ item
   where matcher = (==) at . actionType
+
+itemHasName :: Item -> String -> Bool
+itemHasName item name = (==) name . T.unpack . itemName $ item
 
 
 -- Parse
