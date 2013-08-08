@@ -1,9 +1,5 @@
 module TaGenerator.Parser where
 
-import Data.Char
-import qualified Data.Map as M
-import Data.Functor
-import Control.Monad
 import Control.Applicative
 import Control.Arrow (first)
 
@@ -37,6 +33,7 @@ instance Monad (Parser a) where
     (Parser runner) >>= f = Parser $ bindToRunner f runner
     fail _ = failParser
 
+bindToRunner :: (c -> Parser a b) -> (d -> PResult a c) -> d -> Maybe (b, [a])
 bindToRunner f runner items = do
     (result, restOfItems) <- runner items
     run (f result) restOfItems

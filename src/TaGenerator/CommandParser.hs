@@ -16,13 +16,13 @@ data Command = Go String
 
 
 parseCommand :: String -> Maybe Command
-parseCommand s = fmap fst $ run command s
+parseCommand s = fmap fst $ run commandParser s
 
-command :: Parser Char Command
-command = goCommand
-          <|> pickUpCommand
-          <|> lookAtCommand
-          <|> lookAroundCommand
+commandParser :: Parser Char Command
+commandParser = goCommand
+                <|> pickUpCommand
+                <|> lookAtCommand
+                <|> lookAroundCommand
 
 singleParameterCommand :: String -> Parser Char String
 singleParameterCommand command = string command *> spaces *> anyString

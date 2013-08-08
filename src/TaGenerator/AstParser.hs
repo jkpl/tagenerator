@@ -27,6 +27,7 @@ boolConst :: Ast -> Maybe Bool
 boolConst (Variable v) = strToBool v
 boolConst _ = Nothing
 
+strToBool :: String -> Maybe Bool
 strToBool "yes" = Just True
 strToBool "no" = Just False
 

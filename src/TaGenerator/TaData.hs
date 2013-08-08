@@ -39,7 +39,6 @@ module TaGenerator.TaData
        , getItem
        ) where
 
-import Data.Maybe (listToMaybe)
 import Data.Monoid
 import Control.Applicative
 import qualified Data.Map as M
