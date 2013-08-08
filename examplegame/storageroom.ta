@@ -1,0 +1,58 @@
+storageroom = room {
+    name = "Storage room";
+    description = "Storage room seems to hold some items. Try picking them up.";
+    directions = {
+        east = crosspoint;
+    };
+    items = [ heavybox box dog ];
+};
+
+heavybox = item {
+    name = "heavy box";
+    description = "Really heavy box.";
+    actions = [
+        pickup {
+            success = no;
+            message = "You try moving the box, but it doesn't even budge.";
+        }
+        look {
+            success = yes;
+            message = "You see a really, really heavy box, and wonder how it got there.";
+        }
+    ];
+};
+
+box = item {
+    name = "box";
+    description = "An ordinary box";
+    actions = [
+        pickup {
+            success = yes;
+            message = "You put the box in your backpack.";
+        }
+        look {
+            success = yes;
+            message = "You see an ordinary box. Perhaps I could pick it up.";
+        }
+    ];
+};
+
+dog = item {
+    name = "little dog";
+    description = "A cute little dog";
+    actions = [
+        pickup {
+            success = no;
+            message = "I better not disturb the dog. It might be bite me or something.";
+        }
+        look {
+            success = yes;
+            message = "You see a cute little dog.
+                __
+               /\/'-,  \"Woof woof!\"
+       ,--'''''   /\"
+ ____,'.  )       \___
+'\"\"\"\"\"------'\"\"\"`-----'";
+        }
+    ];
+};

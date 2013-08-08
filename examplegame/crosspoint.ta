@@ -1,0 +1,9 @@
+crosspoint = room {
+    name = "Cross point";
+    description = "You come to a cross point. There's a storage room to the west, and a small room to north.";
+    directions = {
+        south = entrance;
+        west = storageroom;
+    };
+    items = [ ];
+};

@@ -1,0 +1,8 @@
+entrance = room {
+    name = "Entrance";
+    description = "You see a sign that tells you to go north.";
+    directions = {
+        north = crosspoint;
+    };
+    items = [ ];
+};
