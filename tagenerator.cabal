@@ -10,6 +10,7 @@ copyright:           Jaakko Pallari
 category:            Game
 build-type:          Simple
 cabal-version:       >=1.8
+extra-source-files:  README.md
 
 executable tagenerator
   main-is:             Main.hs
